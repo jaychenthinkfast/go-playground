@@ -33,8 +33,6 @@ services:
     environment:
       - TZ=UTC
       - PORT=3001    # 后端服务端口
-    volumes:
-      - /tmp:/tmp    # 用于临时文件共享
     networks:
       - playground-network
     restart: unless-stopped

@@ -1,5 +1,4 @@
-# 第一阶段：构建Go应用
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine
 
 # 设置工作目录
 WORKDIR /app
@@ -7,7 +6,11 @@ WORKDIR /app
 # 设置Go环境变量
 ENV CGO_ENABLED=0 \
     GOOS=linux \
-    GOARCH=amd64
+    GOARCH=amd64 \
+    GOPROXY=https://goproxy.cn,direct
+
+# 安装必要的软件包
+RUN apk add --no-cache ca-certificates tzdata wget
 
 # 复制go mod文件
 COPY go.mod ./
@@ -22,26 +25,8 @@ COPY . .
 # 构建应用
 RUN go build -o /go-playground -ldflags="-s -w" ./cmd/server
 
-# 第二阶段：创建最小化运行镜像
-FROM alpine:latest
-
-# 设置工作目录
-WORKDIR /
-
-# 安装必要的软件包
-RUN apk add --no-cache ca-certificates tzdata wget
-
-# 添加非root用户运行应用
-RUN adduser -D -u 1000 gouser
-USER gouser
-
-# 从构建阶段复制二进制文件
-COPY --from=builder --chown=gouser:gouser /go-playground /go-playground
-
 # 确保临时目录存在并可写
-USER root
 RUN mkdir -p /tmp && chmod 777 /tmp
-USER gouser
 
 # 设置环境变量
 ENV TZ=UTC \
