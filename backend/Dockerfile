@@ -38,6 +38,11 @@ USER gouser
 # 从构建阶段复制二进制文件
 COPY --from=builder --chown=gouser:gouser /go-playground /go-playground
 
+# 确保临时目录存在并可写
+USER root
+RUN mkdir -p /tmp && chmod 777 /tmp
+USER gouser
+
 # 设置环境变量
 ENV TZ=UTC \
     PORT=3001
