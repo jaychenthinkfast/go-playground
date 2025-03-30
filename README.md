@@ -135,6 +135,10 @@ go-playground/
 │   └── go.mod               # Go模块定义
 │
 ├── docker-compose.yml       # Docker Compose配置
+├── Makefile                 # 项目命令集
+├── LICENSE                  # MIT许可证
+├── CODE_OF_CONDUCT.md       # 行为准则
+├── CONTRIBUTING.md          # 贡献指南
 └── README.md                # 项目文档
 ```
 
@@ -146,6 +150,33 @@ go-playground/
 - Docker & Docker Compose (容器化部署)
 
 ### 8.2 开发环境
+
+#### 使用Makefile简化开发
+
+项目提供了Makefile来简化开发和测试流程。使用以下命令查看所有可用选项：
+
+```bash
+make help
+```
+
+常用命令：
+
+```bash
+# 启动前端开发服务器
+make run-frontend
+
+# 启动后端服务
+make run-backend
+
+# 使用air热重载后端（推荐开发时使用）
+make dev-backend
+
+# 同时启动前端和后端
+make run-all
+
+# 使用Docker Compose启动完整应用
+make docker-run
+```
 
 #### 前端开发
 ```bash

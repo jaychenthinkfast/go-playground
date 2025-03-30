@@ -1,0 +1,43 @@
+# Air 配置文件 (.air.toml)
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# 构建命令
+cmd = "go build -o ./tmp/main ./cmd/server"
+
+# 二进制文件路径
+bin = "tmp/main"
+
+# 触发重新构建的文件扩展名
+include_ext = ["go", "tpl", "tmpl", "html"]
+
+# 忽略的目录
+exclude_dir = ["assets", "tmp", "vendor"]
+
+# 忽略的文件
+exclude_file = []
+
+# 重建时延迟
+delay = 1000 # ms
+
+# 停止构建时杀死进程
+kill_delay = "0s"
+
+# 发送中断信号前等待时间
+stop_on_error = true
+
+[log]
+# 显示日志时间
+time = true
+
+[color]
+# 自定义输出颜色
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[screen]
+# 清除屏幕
+clear_on_rebuild = true 
