@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  # 前端服务 - 提供Vue.js界面
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: go-playground-frontend
+    ports:
+      - "3003:80"  # 映射主机3003端口到容器80端口
+    depends_on:
+      - backend
+    networks:
+      - playground-network
+    restart: unless-stopped
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # 后端服务 - Go API服务器
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: go-playground-backend
+    ports:
+      - "3001:3001"  # 映射主机3001端口到容器3001端口
+    environment:
+      - TZ=UTC
+      - PORT=3001  # 后端服务端口
+      - GOFLAGS=  # 默认Go编译标志
+    networks:
+      - playground-network
+    restart: unless-stopped
+    # 安全设置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# 创建专用网络用于前后端通信
+networks:
+  playground-network:
+    driver: bridge 
