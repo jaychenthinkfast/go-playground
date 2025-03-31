@@ -77,8 +77,8 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the version
 	if !runner.IsValidVersion(req.Version) {
-		desc := fmt.Sprintf("Unsupported Go version. Available versions: %s, %s, %s", 
-			runner.Go124, runner.Go123, runner.GoDev)
+		desc := fmt.Sprintf("Unsupported Go version. Available versions: %s, %s, %s",
+			runner.Go124, runner.Go123, runner.Go122)
 		resp.Error = desc
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
@@ -148,4 +148,4 @@ func handleFormat(w http.ResponseWriter, r *http.Request) {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
-} 
+}

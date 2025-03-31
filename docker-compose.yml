@@ -10,7 +10,9 @@ services:
     ports:
       - "3003:80"  # 映射主机3003端口到容器80端口
     depends_on:
-      - backend
+      - backend-go124
+      - backend-go123
+      - backend-go122
     networks:
       - playground-network
     restart: unless-stopped
@@ -22,17 +24,93 @@ services:
       retries: 3
       start_period: 10s
 
-  # 后端服务 - Go API服务器
-  backend:
+  # Go 1.24 后端服务
+  backend-go124:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    container_name: go-playground-backend
-    ports:
-      - "3001:3001"  # 映射主机3001端口到容器3001端口
+      args:
+        GO_VERSION: "1.24"
+        GO_MOD_VERSION: "1.24"
+    container_name: go-playground-backend-go124
     environment:
       - TZ=UTC
       - PORT=3001    # 后端服务端口
+      - GO_VERSION=go1.24
+    networks:
+      - playground-network
+    restart: unless-stopped
+    # 安全设置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Go 1.23 后端服务
+  backend-go123:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: "1.23"
+        GO_MOD_VERSION: "1.23"
+    container_name: go-playground-backend-go123
+    environment:
+      - TZ=UTC
+      - PORT=3001    # 后端服务端口
+      - GO_VERSION=go1.23
+    networks:
+      - playground-network
+    restart: unless-stopped
+    # 安全设置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Go 1.22 后端服务
+  backend-go122:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: "1.22"
+        GO_MOD_VERSION: "1.22"
+    container_name: go-playground-backend-go122
+    environment:
+      - TZ=UTC
+      - PORT=3001    # 后端服务端口
+      - GO_VERSION=go1.22
     networks:
       - playground-network
     restart: unless-stopped

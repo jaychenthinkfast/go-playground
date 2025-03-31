@@ -13,14 +13,14 @@ import (
 const (
 	Go124 = "go1.24"
 	Go123 = "go1.23"
-	GoDev = "dev"
+	Go122 = "go1.22"
 )
 
 // Version information
 var Versions = map[string]string{
 	Go124: "Go 1.24 - Released February 2024",
 	Go123: "Go 1.23 - Released August 2023",
-	GoDev: "Go Development Branch",
+	Go122: "Go 1.22 - Released February 2023",
 }
 
 // Fixed time for deterministic output

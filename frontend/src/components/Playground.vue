@@ -5,7 +5,7 @@
         <select v-model="selectedVersion">
           <option value="go1.24">Go 1.24</option>
           <option value="go1.23">Go 1.23</option>
-          <option value="dev">Go dev branch</option>
+          <option value="go1.22">Go 1.22</option>
         </select>
       </div>
       <div class="action-buttons">
@@ -72,7 +72,8 @@ export default {
   methods: {
     runCode() {
       // Call the backend API
-      axios.post('/api/run', {
+      const versionPath = this.getVersionPath();
+      axios.post(`/api/${versionPath}/run`, {
         code: this.code,
         version: this.selectedVersion
       })
@@ -90,7 +91,8 @@ export default {
     },
     formatCode() {
       // Call the backend API for formatting
-      axios.post('/api/format', {
+      const versionPath = this.getVersionPath();
+      axios.post(`/api/${versionPath}/format`, {
         code: this.code
       })
       .then(response => {
@@ -99,6 +101,19 @@ export default {
       .catch(error => {
         this.output = 'Error formatting: ' + error.response?.data?.error || 'Failed to format code';
       });
+    },
+    getVersionPath() {
+      // Map the selected version to the API path
+      switch(this.selectedVersion) {
+        case 'go1.24':
+          return 'go1.24';
+        case 'go1.23':
+          return 'go1.23';
+        case 'go1.22':
+          return 'go1.22';
+        default:
+          return 'go1.24'; // Default to Go 1.24
+      }
     },
     shareCode() {
       // Generate a share link

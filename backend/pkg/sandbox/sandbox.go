@@ -63,14 +63,19 @@ func (s *Sandbox) CompileAndRun(ctx context.Context, code string, version string
 		return string(tidyOutput), fmt.Errorf("failed to fetch dependencies: %w", err)
 	}
 
+	// Get environment Go version
+	envGoVersion := os.Getenv("GO_VERSION")
+	if envGoVersion == "" {
+		envGoVersion = "go1.24" // 默认版本
+	}
+
 	// Select the Go binary and arguments based on version
 	goBinary := "go"
 	goArgs := []string{"run"}
 
-	// Log version information - in a production environment we would use
-	// different Go installations or containers for different versions
-	// For this implementation, we'll just log the requested version
+	// Log version information
 	versionInfo := fmt.Sprintf("Requested Go version: %s\n", version)
+	versionInfo += fmt.Sprintf("Container Go version: %s\n", envGoVersion)
 
 	// Add the filename to the arguments
 	goArgs = append(goArgs, filename)
