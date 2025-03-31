@@ -10,12 +10,24 @@ services:
     ports:
       - "3003:80"  # 映射主机3003端口到容器80端口
     depends_on:
-      - backend-go124
-      - backend-go123
-      - backend-go122
+      backend-go124:
+        condition: service_healthy
+      backend-go123:
+        condition: service_healthy
+      backend-go122:
+        condition: service_healthy
     networks:
       - playground-network
-    restart: unless-stopped
+    restart: always
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80"]
@@ -39,7 +51,7 @@ services:
       - GO_VERSION=go1.24
     networks:
       - playground-network
-    restart: unless-stopped
+    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -47,15 +59,25 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    # 资源限制
+    # 资源限制和重启策略
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 1G
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     # 健康检查
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      test: 
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:3001/api/health || exit 1"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,7 +98,7 @@ services:
       - GO_VERSION=go1.23
     networks:
       - playground-network
-    restart: unless-stopped
+    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -84,15 +106,25 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    # 资源限制
+    # 资源限制和重启策略
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 1G
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     # 健康检查
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      test: 
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:3001/api/health || exit 1"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -113,7 +145,7 @@ services:
       - GO_VERSION=go1.22
     networks:
       - playground-network
-    restart: unless-stopped
+    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -121,15 +153,25 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    # 资源限制
+    # 资源限制和重启策略
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 1G
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     # 健康检查
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      test: 
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:3001/api/health || exit 1"
       interval: 30s
       timeout: 10s
       retries: 3
