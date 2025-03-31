@@ -41,6 +41,13 @@ func (s *Sandbox) CompileAndRun(ctx context.Context, code string, version string
 	}
 	defer os.RemoveAll(dir)
 
+	// Initialize go.mod file for module support
+	initCmd := exec.Command("go", "mod", "init", "playground")
+	initCmd.Dir = dir
+	if err := initCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to initialize go.mod: %w", err)
+	}
+
 	// Write the code to a file
 	filename := filepath.Join(dir, "main.go")
 	err = os.WriteFile(filename, []byte(code), 0644)
@@ -48,15 +55,23 @@ func (s *Sandbox) CompileAndRun(ctx context.Context, code string, version string
 		return "", err
 	}
 
+	// Fetch required dependencies
+	tidyCmd := exec.Command("go", "mod", "tidy")
+	tidyCmd.Dir = dir
+	tidyOutput, err := tidyCmd.CombinedOutput()
+	if err != nil {
+		return string(tidyOutput), fmt.Errorf("failed to fetch dependencies: %w", err)
+	}
+
 	// Select the Go binary and arguments based on version
 	goBinary := "go"
 	goArgs := []string{"run"}
-	
+
 	// Log version information - in a production environment we would use
 	// different Go installations or containers for different versions
 	// For this implementation, we'll just log the requested version
 	versionInfo := fmt.Sprintf("Requested Go version: %s\n", version)
-	
+
 	// Add the filename to the arguments
 	goArgs = append(goArgs, filename)
 
@@ -72,14 +87,14 @@ func (s *Sandbox) CompileAndRun(ctx context.Context, code string, version string
 	versionCmd := exec.Command("go", "version")
 	versionCmd.Stdout = &realVersionInfo
 	versionCmd.Run()
-	
+
 	// Capture output
 	output, err := cmd.CombinedOutput()
-	
+
 	// Format the full output with version info
-	fullOutput := fmt.Sprintf("%sActual Go version: %s\n\n%s", 
+	fullOutput := fmt.Sprintf("%sActual Go version: %s\n\n%s",
 		versionInfo, strings.TrimSpace(realVersionInfo.String()), string(output))
-		
+
 	if err != nil {
 		// Return both the error output and the error itself
 		// This helps debug compilation issues
@@ -113,4 +128,4 @@ func (s *Sandbox) FormatCode(code string) (string, error) {
 	}
 
 	return string(formattedCode), nil
-} 
+}

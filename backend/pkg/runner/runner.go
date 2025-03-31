@@ -36,9 +36,9 @@ func Run(ctx context.Context, s *sandbox.Sandbox, code string, version string) (
 	// Inject time package override for deterministic output if needed
 	code = injectTimeOverride(code)
 
-	// Check for network access attempts
-	if containsRestrictedPackages(code) {
-		return "", errors.New("network and certain system operations are not allowed in the playground")
+	// Check for security issues in the code
+	if containsRestrictedOperations(code) {
+		return "", errors.New("security sensitive operations are not allowed in the playground")
 	}
 
 	// Run the code
@@ -61,30 +61,30 @@ func IsValidVersion(version string) bool {
 func injectTimeOverride(code string) string {
 	// This is a simplified version. A real implementation would
 	// use AST parsing and modification to properly inject the time override.
-	
+
 	// Only inject the override if the code explicitly imports "time" package
 	// and not just any package that contains the string "time" (like "runtime")
 	timeImportFound := false
-	
+
 	// Check for explicit time import
 	if strings.Contains(code, "import") {
 		// Check for standalone time import
 		if strings.Contains(code, "import \"time\"") {
 			timeImportFound = true
 		}
-		
+
 		// Check for time import in a block
-		if strings.Contains(code, "import (") && 
+		if strings.Contains(code, "import (") &&
 			(strings.Contains(code, "\"time\"") || strings.Contains(code, "\ttime")) {
 			timeImportFound = true
 		}
 	}
-	
+
 	// Only proceed if time package is explicitly imported
 	if !timeImportFound {
 		return code
 	}
-	
+
 	// Simplified - in real implementation, this would be more sophisticated
 	override := `
 // Playground time override
@@ -111,26 +111,24 @@ var _ = func() interface{} {
 			}
 		}
 	}
-	
+
 	return code
 }
 
-// containsRestrictedPackages checks for network and system operations
-func containsRestrictedPackages(code string) bool {
-	restrictedPackages := []string{
-		"net.Dial", 
-		"net.Listen", 
-		"os.Open", 
-		"os.Create",
+// containsRestrictedOperations checks for security-sensitive operations
+func containsRestrictedOperations(code string) bool {
+	restrictedOperations := []string{
 		"os.Remove",
-		"syscall.",
+		"os.RemoveAll",
+		"syscall.Exec",
+		"syscall.ForkExec",
 	}
-	
-	for _, pkg := range restrictedPackages {
-		if strings.Contains(code, pkg) {
+
+	for _, op := range restrictedOperations {
+		if strings.Contains(code, op) {
 			return true
 		}
 	}
-	
+
 	return false
-} 
+}
