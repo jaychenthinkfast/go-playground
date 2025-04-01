@@ -49,7 +49,7 @@ func main() {
 	defer storage.Close(ctx)
 
 	// 初始化缓存
-	cache, err := redis.NewRedisCache(ctx, redisURI)
+	cache, err := redis.NewRedisCache(redisURI)
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
@@ -70,6 +70,8 @@ func main() {
 	router.POST("/api/share", handler.CreateShare)
 	router.GET("/api/share/:id", handler.GetShare)
 	router.POST("/api/share/:id/view", handler.IncrementViews)
+	router.POST("/api/execute", handler.ExecuteCode)
+	router.GET("/api/result/:taskId", handler.GetRunResult)
 
 	// 启动服务器
 	srv := &http.Server{

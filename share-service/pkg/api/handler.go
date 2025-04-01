@@ -141,16 +141,80 @@ func (h *Handler) GetShare(c *gin.Context) {
 func (h *Handler) IncrementViews(c *gin.Context) {
 	shareId := c.Param("id")
 
-	// 增加访问次数
+	// 增加存储中的访问次数
 	if err := h.storage.IncrementViews(c.Request.Context(), shareId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to increment views"})
 		return
 	}
 
-	// 从缓存删除，强制下次重新加载
-	if err := h.cache.DeleteShare(c.Request.Context(), shareId); err != nil {
-		fmt.Printf("failed to delete share from cache: %v\n", err)
+	// 同时增加缓存中的访问次数
+	if err := h.cache.IncrementViews(c.Request.Context(), shareId); err != nil {
+		fmt.Printf("failed to increment views in cache: %v\n", err)
 	}
 
 	c.Status(http.StatusOK)
+}
+
+// ExecuteCode 处理代码执行请求
+func (h *Handler) ExecuteCode(c *gin.Context) {
+	var req struct {
+		Code    string `json:"code" binding:"required"`
+		Version string `json:"version" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 检查是否超过频率限制
+	ip := c.ClientIP()
+	limited, err := h.cache.IsRateLimited(c.Request.Context(), ip, "execute")
+	if err != nil {
+		fmt.Printf("failed to check rate limit: %v\n", err)
+	}
+	if limited {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+		return
+	}
+
+	// 生成唯一任务ID
+	taskID := uuid.New().String()
+
+	// 这里会有实际的代码执行逻辑，可能是异步的
+	// 为了演示，我们创建一个模拟的结果
+	result := &models.RunResult{
+		Output:    "Hello, World!",
+		ExitCode:  0,
+		Duration:  100,         // 假设耗时100ms
+		Memory:    1024 * 1024, // 假设使用1MB内存
+		CreatedAt: time.Now().Unix(),
+	}
+
+	// 存储结果到缓存
+	if err := h.cache.SetRunResult(c.Request.Context(), taskID, result); err != nil {
+		fmt.Printf("failed to cache run result: %v\n", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"task_id": taskID,
+		"result":  result,
+	})
+}
+
+// GetRunResult 获取代码执行结果
+func (h *Handler) GetRunResult(c *gin.Context) {
+	taskID := c.Param("taskId")
+
+	// 从缓存获取结果
+	result, err := h.cache.GetRunResult(c.Request.Context(), taskID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get run result"})
+		return
+	}
+	if result == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "run result not found or expired"})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }

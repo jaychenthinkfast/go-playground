@@ -35,6 +35,21 @@ type Cache interface {
 	// DeleteShare 从缓存删除分享
 	DeleteShare(ctx context.Context, shareId string) error
 
+	// IncrementViews 增加分享的访问次数
+	IncrementViews(ctx context.Context, shareId string) error
+
+	// GetViews 获取分享的访问次数
+	GetViews(ctx context.Context, shareId string) (int64, error)
+
+	// IsRateLimited 检查是否超过访问频率限制
+	IsRateLimited(ctx context.Context, ip string, endpoint string) (bool, error)
+
+	// SetRunResult 存储代码运行结果
+	SetRunResult(ctx context.Context, taskID string, result *models.RunResult) error
+
+	// GetRunResult 获取代码运行结果
+	GetRunResult(ctx context.Context, taskID string) (*models.RunResult, error)
+
 	// Close 关闭缓存连接
 	Close() error
 }
