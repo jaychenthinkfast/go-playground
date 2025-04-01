@@ -1,0 +1,102 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/playground/share-service/pkg/api"
+	"github.com/playground/share-service/pkg/storage/mongo"
+	"github.com/playground/share-service/pkg/storage/redis"
+)
+
+func main() {
+	// 创建上下文
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 获取环境变量
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3002"
+	}
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+
+	mongoDB := os.Getenv("MONGO_DB")
+	if mongoDB == "" {
+		mongoDB = "playground"
+	}
+
+	redisURI := os.Getenv("REDIS_URI")
+	if redisURI == "" {
+		redisURI = "redis://localhost:6379/0"
+	}
+
+	// 初始化存储
+	storage, err := mongo.NewMongoStorage(ctx, mongoURI, mongoDB, "shares")
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer storage.Close(ctx)
+
+	// 初始化缓存
+	cache, err := redis.NewRedisCache(ctx, redisURI)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer cache.Close()
+
+	// 创建 Gin 路由
+	router := gin.Default()
+
+	// 添加中间件
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
+
+	// 创建 API 处理器
+	handler := api.NewHandler(storage, cache)
+
+	// 注册路由
+	router.GET("/health", handler.HealthCheck)
+	router.POST("/api/share", handler.CreateShare)
+	router.GET("/api/share/:id", handler.GetShare)
+	router.POST("/api/share/:id/view", handler.IncrementViews)
+
+	// 启动服务器
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
+	}
+
+	// 优雅关闭
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	// 设置关闭超时
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
+}

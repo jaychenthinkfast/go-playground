@@ -15,7 +15,7 @@
         <button @click="formatCode" class="btn btn-format">
           <i class="fas fa-align-left"></i> Format
         </button>
-        <button @click="shareCode" class="btn btn-share">
+        <button @click="showShareDialog" class="btn btn-share">
           <i class="fas fa-share-alt"></i> Share
         </button>
       </div>
@@ -45,14 +45,29 @@
       <h3>Output:</h3>
       <pre>{{ output }}</pre>
     </div>
+
+    <!-- 分享对话框 -->
+    <div v-if="showShare" class="modal-overlay">
+      <div class="modal">
+        <Share
+          :code="code"
+          :version="selectedVersion"
+          @close="showShare = false"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import Share from './Share.vue'
 
 export default {
   name: 'Playground',
+  components: {
+    Share
+  },
   data() {
     return {
       code: '// You can edit this code!\n// Click here and start typing.\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
@@ -66,7 +81,8 @@ export default {
         'concurrent-pi': '// Concurrent Pi calculation\npackage main\n\nimport (\n\t"fmt"\n\t"math"\n)\n\nfunc main() {\n\tch := make(chan float64)\n\tgo calculatePi(ch, 100000)\n\tpi := <-ch\n\tfmt.Printf("Calculated Pi: %.10f\\n", pi)\n\tfmt.Printf("Actual Pi:     %.10f\\n", math.Pi)\n}\n\nfunc calculatePi(ch chan float64, iterations int) {\n\tvar sum float64 = 0\n\tfor i := 0; i < iterations; i++ {\n\t\tx := (float64(i) + 0.5) / float64(iterations)\n\t\tsum += 4 / (1 + x*x)\n\t}\n\tch <- sum / float64(iterations)\n}',
         'http-server': '// HTTP Server example\npackage main\n\nimport (\n\t"fmt"\n\t"net/http"\n)\n\nfunc main() {\n\thttp.HandleFunc("/", handler)\n\tfmt.Println("Starting server at port 8080...")\n\t// Note: This won\'t actually run in the playground\n\t// as network operations are restricted\n\t// http.ListenAndServe(":8080", nil)\n\tfmt.Println("Server example - network operations disabled")\n}\n\nfunc handler(w http.ResponseWriter, r *http.Request) {\n\tfmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])\n}',
         'goversion': '// Go version example\npackage main\n\nimport (\n\t"fmt"\n\t"runtime"\n)\n\nfunc main() {\n\tfmt.Println("Go version:", runtime.Version())\n}'
-      }
+      },
+      showShare: false
     }
   },
   methods: {
@@ -115,16 +131,8 @@ export default {
           return 'go1.24'; // Default to Go 1.24
       }
     },
-    shareCode() {
-      // Generate a share link
-      const shareData = {
-        code: this.code,
-        version: this.selectedVersion
-      };
-      
-      // In a real implementation, this would call an API to generate a shareable link
-      console.log('Share data:', shareData);
-      alert('Sharing functionality will be implemented in a future update.');
+    showShareDialog() {
+      this.showShare = true
     },
     loadExample() {
       if (this.selectedExample && this.examples[this.selectedExample]) {
@@ -229,5 +237,38 @@ export default {
   font-family: 'Courier New', monospace;
   font-size: 14px;
   white-space: pre-wrap;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  min-width: 500px;
+}
+
+.share-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.share-btn:hover {
+  background-color: #218838;
 }
 </style> 

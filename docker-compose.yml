@@ -16,6 +16,8 @@ services:
         condition: service_healthy
       backend-go122:
         condition: service_healthy
+      share-service:
+        condition: service_healthy
     networks:
       - playground-network
     restart: always
@@ -31,6 +33,116 @@ services:
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Share 服务
+  share-service:
+    build:
+      context: ./share-service
+      dockerfile: Dockerfile
+    container_name: go-playground-share
+    environment:
+      - TZ=UTC
+      - PORT=3002
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URI=redis://redis:6379/0
+      - MONGO_DB=playground
+      - REDIS_DB=0
+    ports:
+      - "3002:3002"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - playground-network
+    restart: always
+    # 安全设置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # 资源限制和重启策略
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 300M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MongoDB 服务
+  mongo:
+    build:
+      context: .
+      dockerfile: share-service/Dockerfile.mongo
+    container_name: go-playground-mongo
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=playground
+    networks:
+      - playground-network
+    restart: always
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 500M
+        reservations:
+          cpus: '0.1'
+          memory: 200M
+    # 健康检查
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Redis 服务
+  redis:
+    build:
+      context: .
+      dockerfile: share-service/Dockerfile.redis
+    container_name: go-playground-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - playground-network
+    restart: always
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -180,4 +292,9 @@ services:
 # 创建专用网络用于前后端通信
 networks:
   playground-network:
-    driver: bridge 
+    driver: bridge
+
+# 持久化存储
+volumes:
+  mongo_data:    # MongoDB 数据持久化
+  redis_data:    # Redis 数据持久化 

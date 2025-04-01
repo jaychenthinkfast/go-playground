@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Playground from '../components/Playground.vue'
+import HomeView from '../views/HomeView.vue'
+import ShareView from '../views/ShareView.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Playground',
-    component: Playground
+    name: 'home',
+    component: HomeView
+  },
+  {
+    path: '/share/:id',
+    name: 'share',
+    component: ShareView
   }
 ]
 
