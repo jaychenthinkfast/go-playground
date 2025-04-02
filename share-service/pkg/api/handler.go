@@ -1,9 +1,15 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
+
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,13 +19,11 @@ import (
 
 type Handler struct {
 	storage storage.Storage
-	cache   storage.Cache
 }
 
-func NewHandler(storage storage.Storage, cache storage.Cache) *Handler {
+func NewHandler(storage storage.Storage) *Handler {
 	return &Handler{
 		storage: storage,
-		cache:   cache,
 	}
 }
 
@@ -72,12 +76,6 @@ func (h *Handler) CreateShare(c *gin.Context) {
 		return
 	}
 
-	// 保存到缓存
-	if err := h.cache.SetShare(c.Request.Context(), share); err != nil {
-		// 缓存错误不影响主流程，只记录日志
-		fmt.Printf("failed to cache share: %v\n", err)
-	}
-
 	// 构建响应
 	resp := &models.CreateShareResponse{
 		ShareID:   shareId,
@@ -92,28 +90,15 @@ func (h *Handler) CreateShare(c *gin.Context) {
 func (h *Handler) GetShare(c *gin.Context) {
 	shareId := c.Param("id")
 
-	// 先从缓存获取
-	share, err := h.cache.GetShare(c.Request.Context(), shareId)
+	// 从数据库获取分享
+	share, err := h.storage.GetShare(c.Request.Context(), shareId)
 	if err != nil {
-		fmt.Printf("failed to get share from cache: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get share"})
+		return
 	}
-
-	// 缓存未命中，从存储获取
 	if share == nil {
-		share, err = h.storage.GetShare(c.Request.Context(), shareId)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get share"})
-			return
-		}
-		if share == nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "share not found"})
-			return
-		}
-
-		// 更新缓存
-		if err := h.cache.SetShare(c.Request.Context(), share); err != nil {
-			fmt.Printf("failed to cache share: %v\n", err)
-		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "share not found"})
+		return
 	}
 
 	// 检查是否过期
@@ -121,6 +106,14 @@ func (h *Handler) GetShare(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "share has expired"})
 		return
 	}
+
+	// 增加访问次数（异步）
+	go func() {
+		ctx := c.Request.Context()
+		if err := h.storage.IncrementViews(ctx, shareId); err != nil {
+			fmt.Printf("failed to increment views: %v\n", err)
+		}
+	}()
 
 	// 构建响应
 	resp := &models.GetShareResponse{
@@ -147,11 +140,6 @@ func (h *Handler) IncrementViews(c *gin.Context) {
 		return
 	}
 
-	// 同时增加缓存中的访问次数
-	if err := h.cache.IncrementViews(c.Request.Context(), shareId); err != nil {
-		fmt.Printf("failed to increment views in cache: %v\n", err)
-	}
-
 	c.Status(http.StatusOK)
 }
 
@@ -166,34 +154,165 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 		return
 	}
 
-	// 检查是否超过频率限制
-	ip := c.ClientIP()
-	limited, err := h.cache.IsRateLimited(c.Request.Context(), ip, "execute")
-	if err != nil {
-		fmt.Printf("failed to check rate limit: %v\n", err)
-	}
-	if limited {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
-		return
-	}
+	fmt.Printf("收到代码执行请求, 版本: %s, 代码长度: %d\n", req.Version, len(req.Code))
 
 	// 生成唯一任务ID
 	taskID := uuid.New().String()
 
-	// 这里会有实际的代码执行逻辑，可能是异步的
-	// 为了演示，我们创建一个模拟的结果
+	// 验证版本格式，确保版本格式正确
+	var normalizedVersion string
+	switch req.Version {
+	case "go1.22", "1.22", "go1.22.0", "1.22.0":
+		normalizedVersion = "go1.22"
+	case "go1.23", "1.23", "go1.23.0", "1.23.0":
+		normalizedVersion = "go1.23"
+	case "go1.24", "1.24", "go1.24.0", "1.24.0":
+		normalizedVersion = "go1.24"
+	default:
+		fmt.Printf("不支持的 Go 版本: %s\n", req.Version)
+
+		// 返回错误响应
+		result := &models.RunResult{
+			Output:    "",
+			Error:     "Unsupported Go version. Available versions: go1.24, go1.23, go1.22",
+			ExitCode:  1,
+			Duration:  0,
+			Memory:    0,
+			CreatedAt: time.Now().Unix(),
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"task_id": taskID,
+			"result":  result,
+			"error":   "Unsupported version",
+		})
+		return
+	}
+
+	// 构建请求转发到后端执行服务
+	var backendURL string
+	switch normalizedVersion {
+	case "go1.22":
+		backendURL = "http://backend-go122:3001/api/run"
+	case "go1.23":
+		backendURL = "http://backend-go123:3001/api/run"
+	case "go1.24":
+		backendURL = "http://backend-go124:3001/api/run"
+	}
+
+	// 准备发送到后端的请求
+	backendReq, err := json.Marshal(map[string]interface{}{
+		"code":     req.Code,
+		"version":  normalizedVersion,
+		"language": "go",
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to prepare backend request"})
+		return
+	}
+
+	// 调用后端执行服务
+	fmt.Printf("转发代码执行请求到后端服务: %s，版本: %s\n", backendURL, normalizedVersion)
+	resp, err := http.Post(backendURL, "application/json", bytes.NewBuffer(backendReq))
+	if err != nil {
+		fmt.Printf("调用后端服务失败: %v\n", err)
+		// 后端服务不可用，返回模拟结果以便测试
+		mockResult := &models.RunResult{
+			Output:    "Hello, World! (mock result - backend service unavailable)",
+			Error:     fmt.Sprintf("后端服务不可用: %v", err),
+			ExitCode:  0,
+			Duration:  100,
+			Memory:    1024 * 1024,
+			CreatedAt: time.Now().Unix(),
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"task_id": taskID,
+			"result":  mockResult,
+			"mocked":  true,
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	// 记录状态码
+	fmt.Printf("后端服务响应状态码: %d\n", resp.StatusCode)
+
+	// 读取响应内容（不管状态码如何）
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("读取后端服务响应失败: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read backend response"})
+		return
+	}
+	fmt.Printf("后端服务响应内容: %s\n", string(respBody))
+
+	// 检查响应状态码，非200状态码视为错误
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("后端服务返回非200状态码: %d，响应内容: %s\n", resp.StatusCode, string(respBody))
+		result := &models.RunResult{
+			Output:    "",
+			Error:     fmt.Sprintf("后端服务错误: 状态码 %d, 响应: %s", resp.StatusCode, string(respBody)),
+			ExitCode:  1,
+			Duration:  0,
+			Memory:    0,
+			CreatedAt: time.Now().Unix(),
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"task_id": taskID,
+			"result":  result,
+			"error":   "Backend service error",
+		})
+		return
+	}
+
+	// 解析后端响应
+	var backendResp map[string]interface{}
+	if err := json.Unmarshal(respBody, &backendResp); err != nil {
+		fmt.Printf("解析后端响应失败: %v, 响应内容: %s\n", err, string(respBody))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decode backend response"})
+		return
+	}
+
+	// 转换为我们的运行结果格式
+	output := ""
+	if out, ok := backendResp["output"].(string); ok {
+		output = out
+	}
+
+	errMsg := ""
+	if errOutput, ok := backendResp["error"].(string); ok {
+		errMsg = errOutput
+	}
+
+	exitCode := 0
+	if code, ok := backendResp["exitCode"].(float64); ok {
+		exitCode = int(code)
+	}
+
+	duration := int64(100)
+	if dur, ok := backendResp["duration"].(float64); ok {
+		duration = int64(dur)
+	}
+
+	memory := int64(1024 * 1024)
+	if mem, ok := backendResp["memory"].(float64); ok {
+		memory = int64(mem)
+	}
+
+	// 创建结果对象
 	result := &models.RunResult{
-		Output:    "Hello, World!",
-		ExitCode:  0,
-		Duration:  100,         // 假设耗时100ms
-		Memory:    1024 * 1024, // 假设使用1MB内存
+		Output:    output,
+		Error:     errMsg,
+		ExitCode:  exitCode,
+		Duration:  duration,
+		Memory:    memory,
 		CreatedAt: time.Now().Unix(),
 	}
 
-	// 存储结果到缓存
-	if err := h.cache.SetRunResult(c.Request.Context(), taskID, result); err != nil {
-		fmt.Printf("failed to cache run result: %v\n", err)
-	}
+	fmt.Printf("代码执行结果: 退出码=%d, 输出长度=%d, 错误长度=%d\n",
+		exitCode, len(output), len(errMsg))
 
 	c.JSON(http.StatusOK, gin.H{
 		"task_id": taskID,
@@ -201,20 +320,9 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 	})
 }
 
-// GetRunResult 获取代码执行结果
-func (h *Handler) GetRunResult(c *gin.Context) {
-	taskID := c.Param("taskId")
-
-	// 从缓存获取结果
-	result, err := h.cache.GetRunResult(c.Request.Context(), taskID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get run result"})
-		return
-	}
-	if result == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "run result not found or expired"})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
+// 计算代码的哈希值，用于缓存键
+func calculateHash(code string) string {
+	h := sha256.New()
+	h.Write([]byte(code))
+	return hex.EncodeToString(h.Sum(nil))
 }

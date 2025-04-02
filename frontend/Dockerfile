@@ -1,11 +1,14 @@
 # 第一阶段：构建Vue应用
-FROM node:18-alpine as build-stage
+FROM docker.m.daocloud.io/library/node:18-alpine as build-stage
 
 # 设置工作目录
 WORKDIR /app
 
 # 设置环境变量
 ENV NODE_ENV=production
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 复制依赖文件
 COPY package*.json ./
@@ -20,10 +23,13 @@ COPY . .
 RUN npm run build
 
 # 第二阶段：Nginx服务阶段
-FROM nginx:stable-alpine as production-stage
+FROM docker.m.daocloud.io/library/nginx:stable-alpine as production-stage
 
 # 设置工作目录
 WORKDIR /usr/share/nginx/html
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 从构建阶段复制构建文件
 COPY --from=build-stage /app/dist .

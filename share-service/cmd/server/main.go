@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/playground/share-service/pkg/api"
 	"github.com/playground/share-service/pkg/storage/mongo"
-	"github.com/playground/share-service/pkg/storage/redis"
 )
 
 func main() {
@@ -36,24 +35,12 @@ func main() {
 		mongoDB = "playground"
 	}
 
-	redisURI := os.Getenv("REDIS_URI")
-	if redisURI == "" {
-		redisURI = "redis://localhost:6379/0"
-	}
-
 	// 初始化存储
 	storage, err := mongo.NewMongoStorage(ctx, mongoURI, mongoDB, "shares")
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer storage.Close(ctx)
-
-	// 初始化缓存
-	cache, err := redis.NewRedisCache(redisURI)
-	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
-	}
-	defer cache.Close()
 
 	// 创建 Gin 路由
 	router := gin.Default()
@@ -63,7 +50,7 @@ func main() {
 	router.Use(gin.Logger())
 
 	// 创建 API 处理器
-	handler := api.NewHandler(storage, cache)
+	handler := api.NewHandler(storage)
 
 	// 注册路由
 	router.GET("/health", handler.HealthCheck)
@@ -71,7 +58,6 @@ func main() {
 	router.GET("/api/share/:id", handler.GetShare)
 	router.POST("/api/share/:id/view", handler.IncrementViews)
 	router.POST("/api/execute", handler.ExecuteCode)
-	router.GET("/api/result/:taskId", handler.GetRunResult)
 
 	// 启动服务器
 	srv := &http.Server{

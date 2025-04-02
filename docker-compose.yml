@@ -48,15 +48,11 @@ services:
       - TZ=UTC
       - PORT=3002
       - MONGO_URI=mongodb://mongo:27017
-      - REDIS_URI=redis://redis:6379/0
       - MONGO_DB=playground
-      - REDIS_DB=0
     ports:
       - "3002:3002"
     depends_on:
       mongo:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - playground-network
@@ -115,34 +111,6 @@ services:
     # 健康检查
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # Redis 服务
-  redis:
-    build:
-      context: .
-      dockerfile: share-service/Dockerfile.redis
-    container_name: go-playground-redis
-    volumes:
-      - redis_data:/data
-    networks:
-      - playground-network
-    restart: always
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 200M
-        reservations:
-          cpus: '0.1'
-          memory: 100M
-    # 健康检查
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -296,5 +264,4 @@ networks:
 
 # 持久化存储
 volumes:
-  mongo_data:    # MongoDB 数据持久化
-  redis_data:    # Redis 数据持久化 
+  mongo_data:    # MongoDB 数据持久化 

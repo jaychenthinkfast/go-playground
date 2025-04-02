@@ -1,4 +1,4 @@
-FROM mongo:6
+FROM docker.m.daocloud.io/library/mongo:6
 
 COPY docker/mongo/init.js /docker-entrypoint-initdb.d/
 

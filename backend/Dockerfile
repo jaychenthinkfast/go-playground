@@ -1,6 +1,6 @@
 ARG GO_VERSION=1.24
 ARG GO_MOD_VERSION=1.24
-FROM golang:${GO_VERSION}-alpine
+FROM docker.m.daocloud.io/library/golang:${GO_VERSION}-alpine
 
 # 设置工作目录
 WORKDIR /app
@@ -10,6 +10,9 @@ ENV CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64 \
     GOPROXY=https://goproxy.cn,direct
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装必要的软件包
 RUN apk add --no-cache ca-certificates tzdata wget git

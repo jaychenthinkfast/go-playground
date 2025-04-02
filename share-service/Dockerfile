@@ -1,8 +1,11 @@
 # 构建阶段
-FROM golang:1.22-alpine AS builder
+FROM docker.m.daocloud.io/library/golang:1.22-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装必要的系统依赖
 RUN apk add --no-cache git gcc musl-dev
@@ -28,7 +31,10 @@ COPY . .
 RUN go build -ldflags="-s -w" -o share-server ./cmd/server
 
 # 运行阶段
-FROM alpine:latest
+FROM docker.m.daocloud.io/library/alpine:latest
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装必要的运行时依赖
 RUN apk add --no-cache ca-certificates tzdata wget
