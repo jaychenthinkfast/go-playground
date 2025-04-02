@@ -107,13 +107,32 @@ func (h *Handler) GetShare(c *gin.Context) {
 		return
 	}
 
-	// 增加访问次数（异步）
-	go func() {
-		ctx := c.Request.Context()
-		if err := h.storage.IncrementViews(ctx, shareId); err != nil {
+	// 检查请求头中的Cookie，看是否已经访问过
+	viewedCookie, err := c.Cookie(fmt.Sprintf("viewed_%s", shareId))
+	alreadyViewed := err == nil && viewedCookie == "true"
+
+	// 仅当未被此客户端查看时才增加计数
+	if !alreadyViewed {
+		updatedViews, err := h.storage.IncrementViews(c.Request.Context(), shareId)
+		if err != nil {
 			fmt.Printf("failed to increment views: %v\n", err)
+			// 继续处理请求，即使计数失败也不影响获取分享内容
+		} else {
+			// 增加计数成功，更新计数
+			share.Views = updatedViews
+
+			// 设置Cookie标记已访问，有效期24小时
+			c.SetCookie(
+				fmt.Sprintf("viewed_%s", shareId), // Cookie名称
+				"true",                            // Cookie值
+				86400,                             // 过期时间（秒）
+				"/",                               // 路径
+				"",                                // 域名
+				false,                             // 仅HTTPS
+				true,                              // HTTP Only
+			)
 		}
-	}()
+	}
 
 	// 构建响应
 	resp := &models.GetShareResponse{
@@ -130,17 +149,18 @@ func (h *Handler) GetShare(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// IncrementViews 处理增加访问次数请求
+// IncrementViews 处理手动增加访问次数请求
 func (h *Handler) IncrementViews(c *gin.Context) {
 	shareId := c.Param("id")
 
 	// 增加存储中的访问次数
-	if err := h.storage.IncrementViews(c.Request.Context(), shareId); err != nil {
+	updatedViews, err := h.storage.IncrementViews(c.Request.Context(), shareId)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to increment views"})
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{"views": updatedViews})
 }
 
 // ExecuteCode 处理代码执行请求

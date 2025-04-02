@@ -14,8 +14,8 @@ type Storage interface {
 	// GetShare 通过 shareId 获取分享
 	GetShare(ctx context.Context, shareId string) (*models.Share, error)
 
-	// IncrementViews 增加分享的访问次数
-	IncrementViews(ctx context.Context, shareId string) error
+	// IncrementViews 增加分享的访问次数，返回更新后的计数
+	IncrementViews(ctx context.Context, shareId string) (int64, error)
 
 	// DeleteExpiredShares 删除过期的分享
 	DeleteExpiredShares(ctx context.Context) error

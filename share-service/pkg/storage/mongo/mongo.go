@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/playground/share-service/pkg/models"
@@ -67,13 +68,31 @@ func (s *MongoStorage) GetShare(ctx context.Context, shareId string) (*models.Sh
 }
 
 // IncrementViews 实现 Storage 接口
-func (s *MongoStorage) IncrementViews(ctx context.Context, shareId string) error {
+func (s *MongoStorage) IncrementViews(ctx context.Context, shareId string) (int64, error) {
 	update := bson.M{
 		"$inc": bson.M{"views": 1},
 		"$set": bson.M{"last_viewed": time.Now()},
 	}
-	_, err := s.collection.UpdateOne(ctx, bson.M{"shareId": shareId}, update)
-	return err
+
+	// 使用 FindOneAndUpdate 操作，返回更新后的文档
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updatedShare models.Share
+
+	err := s.collection.FindOneAndUpdate(
+		ctx,
+		bson.M{"shareId": shareId},
+		update,
+		opts,
+	).Decode(&updatedShare)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return 0, fmt.Errorf("share not found: %s", shareId)
+		}
+		return 0, err
+	}
+
+	return updatedShare.Views, nil
 }
 
 // DeleteExpiredShares 实现 Storage 接口
