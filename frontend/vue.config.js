@@ -1,12 +1,6 @@
 module.exports = {
   devServer: {
-    port: 3003,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true
-      }
-    }
+    port: 3003
   },
   configureWebpack: {
     resolve: {
