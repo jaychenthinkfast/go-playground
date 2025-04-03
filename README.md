@@ -15,8 +15,8 @@
 ## 技术栈
 
 ### 前端
-- React + TypeScript
-- Vite 构建工具
+- Vue.js 3 + JavaScript
+- Vue CLI 构建工具
 - TailwindCSS 样式框架
 - Monaco Editor 代码编辑器
 
@@ -32,6 +32,7 @@
 - Docker + Docker Compose
 - Nginx 反向代理
 - 容器化部署
+- 阿里云镜像加速
 
 ## 快速开始
 
@@ -58,6 +59,8 @@ docker compose up --build --remove-orphans
 3. 访问应用
 打开浏览器访问 http://localhost:3003
 
+> 注意：本项目的Docker配置已适配国内网络环境，使用了阿里云镜像源以加速构建和依赖安装。
+
 ### 开发模式启动
 
 如果您想在开发模式下启动服务，可以使用：
@@ -66,7 +69,7 @@ docker compose up --build --remove-orphans
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-这将启动开发模式，提供热重载和更详细的日志输出。
+这将启动开发模式，提供热重载和更详细的日志输出。开发模式下，前端服务会在端口 3003 上运行Vue开发服务器，提供实时热更新功能。
 
 ## 项目结构
 
@@ -75,9 +78,9 @@ docker compose -f docker-compose.dev.yml up --build
 ├── frontend/                # 前端代码
 │   ├── src/                # 源代码
 │   │   ├── components/    # UI组件
-│   │   ├── hooks/         # React钩子
-│   │   ├── pages/         # 页面组件
-│   │   └── utils/         # 工具函数
+│   │   ├── router/        # 路由配置
+│   │   ├── views/         # 页面视图
+│   │   └── assets/        # 静态资源
 │   ├── public/             # 静态资源
 │   └── nginx.conf          # Nginx 配置
 ├── backend/                 # Go 后端代码（多版本）
@@ -100,6 +103,29 @@ docker compose -f docker-compose.dev.yml up --build
 └── docker-compose.yml       # Docker Compose 配置
 ```
 
+## 容器服务与端口
+
+项目包含多个容器服务，各自负责不同功能并映射到主机的不同端口：
+
+1. **前端服务 (frontend)**: 端口 3003
+   - 生产环境：Nginx 服务运行在容器的 80 端口，映射到主机的 3003 端口
+   - 开发环境：Vue 开发服务器运行在容器的 3003 端口，映射到主机的 3003 端口
+
+2. **分享服务 (share-service)**: 端口 3002
+   - 处理代码分享、获取和浏览统计功能
+   - 作为前端和后端服务的协调者
+
+3. **后端服务**:
+   - Go 1.24 (backend-go124): 内部端口 3001
+   - Go 1.23 (backend-go123): 内部端口 3001
+   - Go 1.22 (backend-go122): 内部端口 3001
+   - 各版本在独立容器中运行，通过内部网络通信
+
+4. **MongoDB**: 内部端口 27017
+   - 数据持久化存储
+
+所有服务通过名为 `playground-network` 的Docker网络互相通信，保证了环境的隔离性和安全性。
+
 ## 分享服务架构
 
 Share Service 是一个独立的微服务，负责代码分享功能：
@@ -110,6 +136,11 @@ Share Service 是一个独立的微服务，负责代码分享功能：
    - 存储分享的完整信息，包括代码内容、元数据和统计信息
    - 提供数据持久化，确保分享不会丢失
    - 支持设置分享过期时间，自动清理过期内容
+
+2. **Redis**：可选的缓存层，用于提高访问性能
+   - 缓存常访问的分享内容
+   - 减轻MongoDB的负载
+   - 提高代码分享的访问速度
 
 ### 主要组件
 
