@@ -1,14 +1,19 @@
 version: '3'
 
 services:
-  # 前端服务 - 提供Vue.js界面
-  frontend:
+  # 前端开发服务
+  frontend-dev:
     build: 
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: go-playground-frontend
+      dockerfile: Dockerfile.dev
+    container_name: go-playground-frontend-dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "3003:80"  # 映射主机3003端口到容器80端口
+      - "3003:3003"  # 映射开发服务器端口，改为3003:3003
+    environment:
+      - NODE_ENV=development
     depends_on:
       backend-go124:
         condition: service_healthy
@@ -20,7 +25,6 @@ services:
         condition: service_healthy
     networks:
       - playground-network
-    restart: always
     # 资源限制
     deploy:
       resources:
@@ -32,12 +36,14 @@ services:
           memory: 100M
     # 健康检查
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost:3003"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    command: npm run serve  # 使用Vue开发服务器
 
+  # Share 服务
   # Share 服务
   share-service:
     build:
@@ -93,7 +99,7 @@ services:
       dockerfile: share-service/Dockerfile.mongo
     container_name: go-playground-mongo
     volumes:
-      - mongo_data:/data/db
+      - mongo_data_dev:/data/db
     environment:
       - MONGO_INITDB_DATABASE=playground
     networks:
@@ -110,7 +116,7 @@ services:
           memory: 200M
     # 健康检查
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' 
+      test: echo 'db.runCommand("ping").ok'
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,6 +131,8 @@ services:
         GO_VERSION: "1.24"
         GO_MOD_VERSION: "1.24"
     container_name: go-playground-backend-go124
+    ports:
+      - "3001:3001"  # Expose backend service port to host
     environment:
       - TZ=UTC
       - PORT=3001    # 后端服务端口
@@ -172,6 +180,8 @@ services:
         GO_VERSION: "1.23"
         GO_MOD_VERSION: "1.23"
     container_name: go-playground-backend-go123
+    ports:
+      - "3011:3001"  # Use different host port to avoid conflict
     environment:
       - TZ=UTC
       - PORT=3001    # 后端服务端口
@@ -219,6 +229,8 @@ services:
         GO_VERSION: "1.22"
         GO_MOD_VERSION: "1.22"
     container_name: go-playground-backend-go122
+    ports:
+      - "3021:3001"  # Use different host port to avoid conflict
     environment:
       - TZ=UTC
       - PORT=3001    # 后端服务端口
@@ -264,4 +276,4 @@ networks:
 
 # 持久化存储
 volumes:
-  mongo_data:    # MongoDB 数据持久化 
+  mongo_data_dev:    # MongoDB 数据持久化 

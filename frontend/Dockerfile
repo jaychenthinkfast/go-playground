@@ -10,6 +10,9 @@ ENV NODE_ENV=production
 # 替换Alpine镜像源为阿里云
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
+# 设置npm使用阿里云镜像
+RUN npm config set registry https://registry.npmmirror.com
+
 # 复制依赖文件
 COPY package*.json ./
 

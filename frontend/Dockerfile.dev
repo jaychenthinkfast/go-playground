@@ -1,0 +1,29 @@
+FROM docker.m.daocloud.io/library/node:18-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置环境变量
+ENV NODE_ENV=development
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 设置npm使用阿里云镜像
+RUN npm config set registry https://registry.npmmirror.com
+
+# 安装依赖
+COPY package*.json ./
+RUN npm install
+
+# 安装 Vue CLI 服务
+RUN npm install -g @vue/cli-service
+
+# 安装 curl 用于健康检查
+RUN apk add --no-cache curl
+
+# 暴露开发服务器端口
+EXPOSE 8080
+
+# 启动开发服务器
+CMD ["npm", "run", "serve"] 
