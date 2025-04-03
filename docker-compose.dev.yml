@@ -21,7 +21,7 @@ services:
         condition: service_healthy
       backend-go122:
         condition: service_healthy
-      share-service:
+      share-service-dev:
         condition: service_healthy
     networks:
       - playground-network
@@ -43,18 +43,21 @@ services:
       start_period: 10s
     command: npm run serve  # 使用Vue开发服务器
 
-  # Share 服务
-  # Share 服务
-  share-service:
+  # Share 服务开发环境
+  share-service-dev:
     build:
       context: ./share-service
-      dockerfile: Dockerfile
-    container_name: go-playground-share
+      dockerfile: Dockerfile.dev
+    container_name: go-playground-share-dev
+    volumes:
+      - ./share-service:/app  # 将源代码挂载到容器内，支持热更新
+      - share-service-go-mod-cache:/go/pkg/mod  # 缓存Go模块，加快构建速度
     environment:
       - TZ=UTC
       - PORT=3002
       - MONGO_URI=mongodb://mongo:27017
       - MONGO_DB=playground
+      - GO_ENV=development
     ports:
       - "3002:3002"
     depends_on:
@@ -277,3 +280,4 @@ networks:
 # 持久化存储
 volumes:
   mongo_data_dev:    # MongoDB 数据持久化 
+  share-service-go-mod-cache:  # 添加Go模块缓存卷

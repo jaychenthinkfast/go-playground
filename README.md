@@ -71,36 +71,53 @@ docker compose -f docker-compose.dev.yml up --build
 
 这将启动开发模式，提供热重载和更详细的日志输出。开发模式下，前端服务会在端口 3003 上运行Vue开发服务器，提供实时热更新功能。
 
+> **重要提示**：在开发模式中，服务名称和通信方式与生产环境有所不同。特别是，分享服务在开发环境中的服务名为 `share-service-dev`，而不是 `share-service`。确保 `frontend/vue.config.js` 中的代理配置正确指向各开发服务。
+
 ## 项目结构
 
 ```
 .
 ├── frontend/                # 前端代码
-│   ├── src/                # 源代码
-│   │   ├── components/    # UI组件
-│   │   ├── router/        # 路由配置
-│   │   ├── views/         # 页面视图
-│   │   └── assets/        # 静态资源
-│   ├── public/             # 静态资源
-│   └── nginx.conf          # Nginx 配置
+│   ├── src/                 # 源代码
+│   │   ├── components/      # UI组件
+│   │   ├── router/          # 路由配置
+│   │   ├── views/           # 页面视图
+│   │   ├── assets/          # 静态资源
+│   │   ├── App.vue          # 应用入口组件
+│   │   └── main.js          # 应用入口文件
+│   ├── public/              # 静态资源
+│   ├── package.json         # 项目依赖
+│   ├── vue.config.js        # Vue 配置文件
+│   ├── Dockerfile           # 生产环境 Docker 配置
+│   ├── Dockerfile.dev       # 开发环境 Docker 配置
+│   └── nginx.conf           # Nginx 配置
 ├── backend/                 # Go 后端代码（多版本）
-│   ├── cmd/                # 入口程序
-│   │   └── server/        # 服务器入口
-│   ├── pkg/                # 包目录
-│   │   ├── api/           # API 处理
-│   │   ├── compiler/      # 代码编译和执行
-│   │   └── models/        # 数据模型
+│   ├── cmd/                 # 命令行入口
+│   │   └── server/          # 服务器入口
+│   ├── pkg/                 # 包目录
+│   │   ├── runner/          # 代码运行服务
+│   │   └── sandbox/         # 安全沙箱
+│   ├── .air.toml            # Air 热更新配置
+│   ├── Dockerfile           # Docker 配置
+│   ├── go.mod               # Go 模块文件
+│   └── go.sum               # Go 依赖校验
 ├── share-service/           # 分享服务
-│   ├── cmd/                # 入口程序
-│   │   └── server/        # 服务器入口
-│   ├── pkg/                # 包目录
-│   │   ├── api/           # API 处理
-│   │   ├── models/        # 数据模型
-│   │   └── storage/       # 存储实现
-│   │       └── mongo/     # MongoDB 实现
-├── docker/                  # Docker 配置文件
-│   └── mongo/              # MongoDB 配置
-└── docker-compose.yml       # Docker Compose 配置
+│   ├── cmd/                 # 命令行入口
+│   │   └── server/          # 服务器入口
+│   ├── pkg/                 # 包目录
+│   │   ├── api/             # API 处理
+│   │   ├── models/          # 数据模型
+│   │   ├── storage/         # 存储接口
+│   │   │   └── mongo/       # MongoDB 实现
+│   │   └── utils/           # 工具函数
+│   ├── .air.toml            # Air 热更新配置
+│   ├── Dockerfile           # 生产环境 Docker 配置
+│   ├── Dockerfile.dev       # 开发环境 Docker 配置
+│   ├── Dockerfile.mongo     # MongoDB Docker 配置
+│   ├── go.mod               # Go 模块文件
+│   └── go.sum               # Go 依赖校验
+├── docker-compose.yml       # 生产环境 Docker Compose 配置
+└── docker-compose.dev.yml   # 开发环境 Docker Compose 配置
 ```
 
 ## 容器服务与端口
@@ -198,7 +215,33 @@ go mod download
 go run cmd/server/main.go
 ```
 
+### 配置前端与后端服务的连接
 
+前端开发环境通过 Vue CLI 的代理配置与各服务通信，配置位于 `frontend/vue.config.js` 文件中：
+
+```javascript
+// frontend/vue.config.js
+module.exports = {
+  devServer: {
+    port: 3003,
+    proxy: {
+      '/api/share': {
+        target: 'http://share-service-dev:3002',  // 开发环境中使用 share-service-dev
+        changeOrigin: true,
+        ws: true
+      },
+      '/api/execute': {
+        target: 'http://share-service-dev:3002',  // 开发环境中使用 share-service-dev
+        changeOrigin: true,
+        ws: true
+      },
+      // ...其他代理配置
+    }
+  }
+}
+```
+
+> **注意**：如果分享功能在开发环境中失败，检查上述配置中的服务名是否正确设置为 `share-service-dev`。
 
 ### 构建与部署
 
@@ -316,6 +359,36 @@ docker compose up -d
 2. **代码执行失败**
    问：代码执行返回错误如何排查？
    答：检查代码是否有编译错误，以及是否使用了不支持的特性或包。API 响应会包含详细的错误信息。
+
+3. **分享功能在开发环境中失败**
+   问：为什么在开发环境中进行代码分享时提示"分享失败，请稍后重试"？
+   答：检查 `frontend/vue.config.js` 文件中的代理配置是否正确指向 `share-service-dev`，而不是 `share-service`。开发环境与生产环境的服务名称不同。
+
+4. **Air 热更新不生效**
+   问：修改代码后 Air 没有自动重新构建和重启服务怎么办？
+   答：确保修改的文件扩展名包含在 `.air.toml` 的 `include_ext` 配置中，并且该文件没有被 `exclude_dir` 或 `exclude_file` 配置排除。也可以尝试重启 Air 服务。
+
+5. **容器启动失败**
+   问：Docker 容器启动时出现健康检查失败的错误怎么处理？
+   答：检查容器日志 (`docker logs <container-name>`) 分析具体原因。常见问题包括端口冲突、依赖服务未就绪、配置错误等。增加健康检查的超时时间和重试次数也有助于解决服务启动较慢的问题。
+
+## 开发环境热更新
+
+本项目在开发环境中使用 Air 工具实现热更新功能，使开发过程更加高效：
+
+1. **前端热更新**：
+   - Vue CLI 开发服务器自动监控前端代码变化
+   - 修改 Vue 组件后立即在浏览器中反映变化，无需手动刷新
+
+2. **后端热更新**：
+   - Air 工具监控 Go 代码变化
+   - 自动重新编译和重启服务
+   - 配置位于各服务目录下的 `.air.toml` 文件中
+
+3. **如何使用**：
+   - 启动开发环境: `docker compose -f docker-compose.dev.yml up`
+   - 修改代码后，观察容器日志以确认热更新是否成功
+   - 如需调试热更新问题: `docker logs -f <container-name>`
 
 ## 贡献指南
 

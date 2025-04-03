@@ -3,12 +3,12 @@ module.exports = {
     port: 3003,
     proxy: {
       '/api/share': {
-        target: 'http://share-service:3002',
+        target: 'http://share-service-dev:3002',
         changeOrigin: true,
         ws: true
       },
       '/api/execute': {
-        target: 'http://share-service:3002',
+        target: 'http://share-service-dev:3002',
         changeOrigin: true,
         ws: true
       },

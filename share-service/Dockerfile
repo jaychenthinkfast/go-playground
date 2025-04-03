@@ -1,5 +1,5 @@
 # 构建阶段
-FROM docker.m.daocloud.io/library/golang:1.22-alpine AS builder
+FROM docker.m.daocloud.io/library/golang:1.24-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
