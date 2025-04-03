@@ -137,10 +137,7 @@ Share Service 是一个独立的微服务，负责代码分享功能：
    - 提供数据持久化，确保分享不会丢失
    - 支持设置分享过期时间，自动清理过期内容
 
-2. **Redis**：可选的缓存层，用于提高访问性能
-   - 缓存常访问的分享内容
-   - 减轻MongoDB的负载
-   - 提高代码分享的访问速度
+
 
 ### 主要组件
 
@@ -184,7 +181,7 @@ Share Service 是一个独立的微服务，负责代码分享功能：
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run serve
 ```
 
 2. 后端开发
@@ -201,13 +198,7 @@ go mod download
 go run cmd/server/main.go
 ```
 
-### 环境变量配置
 
-- `MONGO_URI`: MongoDB 连接字符串，用于持久化存储
-- `MONGO_DB`: MongoDB 数据库名称
-- `PORT`: 服务端口号
-- `ENV`: 运行环境 (development/production)
-- `TZ`: 时区设置，默认为 UTC
 
 ### 构建与部署
 
@@ -218,7 +209,7 @@ docker compose build
 
 2. 生产环境部署：
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d 
 ```
 
 ### 代码风格与提交规范
