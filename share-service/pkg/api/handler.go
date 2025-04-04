@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"bytes"
@@ -211,14 +212,31 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 
 	// 构建请求转发到后端执行服务
 	var backendURL string
+	// 根据环境变量决定使用开发环境还是生产环境的后端服务
+	isDevEnv := os.Getenv("GO_ENV") == "development"
+
 	switch normalizedVersion {
 	case "go1.22":
-		backendURL = "http://backend-go122:3001/api/run"
+		if isDevEnv {
+			backendURL = "http://backend-go122-dev:3001/api/run"
+		} else {
+			backendURL = "http://backend-go122:3001/api/run"
+		}
 	case "go1.23":
-		backendURL = "http://backend-go123:3001/api/run"
+		if isDevEnv {
+			backendURL = "http://backend-go123-dev:3001/api/run"
+		} else {
+			backendURL = "http://backend-go123:3001/api/run"
+		}
 	case "go1.24":
-		backendURL = "http://backend-go124:3001/api/run"
+		if isDevEnv {
+			backendURL = "http://backend-go124-dev:3001/api/run"
+		} else {
+			backendURL = "http://backend-go124:3001/api/run"
+		}
 	}
+
+	fmt.Printf("环境: %s, 使用后端服务: %s\n", os.Getenv("GO_ENV"), backendURL)
 
 	// 准备发送到后端的请求
 	backendReq, err := json.Marshal(map[string]interface{}{

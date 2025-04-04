@@ -13,7 +13,7 @@ module.exports = {
         ws: true
       },
       '/api/go1.24': {
-        target: 'http://backend-go124:3001',
+        target: process.env.NODE_ENV === 'development' ? 'http://backend-go124-dev:3001' : 'http://backend-go124:3001',
         changeOrigin: true,
         ws: true,
         pathRewrite: {
@@ -21,7 +21,7 @@ module.exports = {
         }
       },
       '/api/go1.23': {
-        target: 'http://backend-go123:3001',
+        target: process.env.NODE_ENV === 'development' ? 'http://backend-go123-dev:3001' : 'http://backend-go123:3001',
         changeOrigin: true,
         ws: true,
         pathRewrite: {
@@ -29,7 +29,7 @@ module.exports = {
         }
       },
       '/api/go1.22': {
-        target: 'http://backend-go122:3001',
+        target: process.env.NODE_ENV === 'development' ? 'http://backend-go122-dev:3001' : 'http://backend-go122:3001',
         changeOrigin: true,
         ws: true,
         pathRewrite: {
@@ -37,7 +37,7 @@ module.exports = {
         }
       },
       '/api': {
-        target: 'http://backend-go124:3001',
+        target: process.env.NODE_ENV === 'development' ? 'http://backend-go124-dev:3001' : 'http://backend-go124:3001',
         changeOrigin: true,
         ws: true
       }

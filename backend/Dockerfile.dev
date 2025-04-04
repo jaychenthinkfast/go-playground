@@ -1,0 +1,23 @@
+FROM docker.m.daocloud.io/library/golang:1.24-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 替换Alpine镜像源为阿里云
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 安装必要的系统依赖和开发工具
+RUN apk add --no-cache git gcc musl-dev curl wget
+
+# 设置 Go 环境变量
+ENV GO111MODULE=on \
+    GOPROXY=https://goproxy.cn,direct
+
+# 安装 Air 用于热重载
+RUN go install github.com/air-verse/air@latest
+
+# 暴露端口
+EXPOSE ${PORT:-3001}
+
+# 使用 Air 运行应用，实现热重载
+CMD ["air", "-c", ".air.toml"] 
