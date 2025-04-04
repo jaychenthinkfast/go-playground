@@ -17,8 +17,8 @@
 ### 前端
 - Vue.js 3 + JavaScript
 - Vue CLI 构建工具
-- TailwindCSS 样式框架
 - Monaco Editor 代码编辑器
+- Axios HTTP 客户端
 
 ### 后端
 - Go (支持 1.22、1.23、1.24 版本)
@@ -32,7 +32,8 @@
 - Docker + Docker Compose
 - Nginx 反向代理
 - 容器化部署
-- 阿里云镜像加速
+- 健康检查机制
+- 资源限制和重启策略
 
 ## 快速开始
 
@@ -97,8 +98,10 @@ docker compose -f docker-compose.dev.yml up --build
 │   ├── pkg/                 # 包目录
 │   │   ├── runner/          # 代码运行服务
 │   │   └── sandbox/         # 安全沙箱
+│   ├── app/                 # 应用代码
 │   ├── .air.toml            # Air 热更新配置
-│   ├── Dockerfile           # Docker 配置
+│   ├── Dockerfile           # 生产环境 Docker 配置
+│   ├── Dockerfile.dev       # 开发环境 Docker 配置
 │   ├── go.mod               # Go 模块文件
 │   └── go.sum               # Go 依赖校验
 ├── share-service/           # 分享服务
@@ -116,6 +119,7 @@ docker compose -f docker-compose.dev.yml up --build
 │   ├── Dockerfile.mongo     # MongoDB Docker 配置
 │   ├── go.mod               # Go 模块文件
 │   └── go.sum               # Go 依赖校验
+├── docker/                  # Docker 相关配置文件
 ├── docker-compose.yml       # 生产环境 Docker Compose 配置
 └── docker-compose.dev.yml   # 开发环境 Docker Compose 配置
 ```
@@ -143,6 +147,25 @@ docker compose -f docker-compose.dev.yml up --build
 
 所有服务通过名为 `playground-network` 的Docker网络互相通信，保证了环境的隔离性和安全性。
 
+## 安全与性能优化
+
+项目采用了多种安全措施和性能优化策略：
+
+1. **容器安全设置**
+   - 使用 `no-new-privileges:true` 限制权限提升
+   - 只保留必要的容器能力（capabilities）
+   - 服务间严格网络隔离
+
+2. **资源管理**
+   - 每个服务设置了 CPU 和内存限制
+   - 防止单个服务占用过多资源
+   - 优化了容器重启策略
+
+3. **健康检查**
+   - 所有服务配置了健康检查
+   - 自动检测服务状态并在需要时重启
+   - 服务依赖关系明确定义
+
 ## 分享服务架构
 
 Share Service 是一个独立的微服务，负责代码分享功能：
@@ -153,8 +176,6 @@ Share Service 是一个独立的微服务，负责代码分享功能：
    - 存储分享的完整信息，包括代码内容、元数据和统计信息
    - 提供数据持久化，确保分享不会丢失
    - 支持设置分享过期时间，自动清理过期内容
-
-
 
 ### 主要组件
 
