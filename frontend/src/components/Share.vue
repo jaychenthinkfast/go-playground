@@ -155,6 +155,7 @@ export default {
 <style scoped>
 .share-dialog {
   padding: 20px;
+  width: 100%;
   max-width: 500px;
   margin: 0 auto;
 }
@@ -175,6 +176,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
 .actions {
@@ -190,6 +192,7 @@ export default {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -219,10 +222,50 @@ export default {
 
 .url-display input {
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .expires-info {
   color: #666;
   margin-bottom: 20px;
+}
+
+/* 适应移动设备的样式 */
+@media (max-width: 576px) {
+  .share-dialog {
+    padding: 15px;
+  }
+  
+  .form-control {
+    font-size: 16px; /* 移动设备上增大字体，防止缩放 */
+  }
+  
+  .url-display {
+    flex-direction: column;
+  }
+  
+  .url-display input {
+    margin-bottom: 10px;
+  }
+  
+  .actions {
+    justify-content: center;
+  }
+  
+  .btn {
+    padding: 10px 16px; /* 在移动设备上增大按钮点击区域 */
+  }
+}
+
+@media (max-width: 320px) {
+  .actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .btn {
+    width: 100%;
+  }
 }
 </style> 

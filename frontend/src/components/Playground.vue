@@ -38,6 +38,10 @@
         v-model="code"
         placeholder="// Write your Go code here"
         @keydown.tab.prevent="handleTab"
+        spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off"
+        autocomplete="off"
       ></textarea>
     </div>
 
@@ -47,7 +51,7 @@
     </div>
 
     <!-- 分享对话框 -->
-    <div v-if="showShare" class="modal-overlay">
+    <div v-if="showShare" class="modal-overlay" @click.self="showShare = false">
       <div class="modal">
         <Share
           :code="code"
@@ -160,17 +164,21 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 100%;
   border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
+  flex: 1;
 }
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   padding: 0.5rem;
   background-color: #f5f5f5;
   border-bottom: 1px solid #ddd;
+  gap: 8px;
 }
 
 .version-selector select,
@@ -178,11 +186,14 @@ export default {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  width: 100%;
+  min-width: 120px;
 }
 
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -191,6 +202,10 @@ export default {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .btn-run {
@@ -210,13 +225,15 @@ export default {
 
 .editor-container {
   flex: 1;
-  min-height: 300px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 .code-editor {
   width: 100%;
   height: 100%;
-  min-height: 300px;
+  min-height: 200px;
   padding: 1rem;
   font-family: 'Courier New', monospace;
   font-size: 14px;
@@ -224,12 +241,23 @@ export default {
   border: none;
   resize: none;
   tab-size: 4;
+  flex: 1;
 }
 
 .output-container {
   padding: 1rem;
   background-color: #f8f8f8;
   border-top: 1px solid #ddd;
+  overflow-x: auto;
+  max-height: none;
+  width: 100%;
+}
+
+.output-container h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #333;
 }
 
 .output-container pre {
@@ -237,6 +265,9 @@ export default {
   font-family: 'Courier New', monospace;
   font-size: 14px;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
 }
 
 .modal-overlay {
@@ -250,25 +281,88 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal {
   background: white;
-  border-radius: 8px;
-  min-width: 500px;
-}
-
-.share-btn {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 16px;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.share-btn:hover {
-  background-color: #218838;
+/* 媒体查询以适应移动设备 */
+@media (max-width: 768px) {
+  .playground-container {
+    border: none;
+    border-radius: 0;
+  }
+  
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .version-selector,
+  .action-buttons,
+  .examples-dropdown {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .action-buttons {
+    justify-content: space-between;
+  }
+  
+  .btn {
+    padding: 0.5rem;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .code-editor {
+    font-size: 16px; /* 在移动设备上增大字体 */
+    padding: 0.75rem;
+  }
+  
+  .output-container {
+    padding: 0.75rem;
+  }
+  
+  .output-container h3 {
+    font-size: 0.9rem;
+  }
+  
+  .output-container pre {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    padding: 0.25rem;
+  }
+  
+  .btn {
+    padding: 0.5rem 0.25rem;
+    font-size: 13px;
+  }
+  
+  .modal {
+    max-width: 100%;
+    margin: 0 10px;
+  }
+  
+  .output-container {
+    padding: 0.5rem;
+    min-height: 120px; /* 确保在小屏幕上输出区域有足够高度 */
+  }
+  
+  .output-container pre {
+    padding-bottom: 1rem; /* 增加底部留白 */
+  }
 }
 </style> 

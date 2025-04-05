@@ -25,14 +25,14 @@
         </div>
       </div>
       <div class="code-container">
-        <pre><code>{{ share.code }}</code></pre>
+        <pre class="code-block"><code>{{ share.code }}</code></pre>
       </div>
       <div class="actions">
         <button @click="runCode" class="btn btn-primary" :disabled="isRunning">
-          {{ isRunning ? '运行中...' : '运行' }}
+          <i class="fas fa-play"></i> {{ isRunning ? '运行中...' : '运行' }}
         </button>
         <button @click="copyCode" class="btn btn-secondary">
-          {{ copied ? '已复制' : '复制代码' }}
+          <i class="fas fa-copy"></i> {{ copied ? '已复制' : '复制代码' }}
         </button>
       </div>
       <div v-if="output" class="output">
@@ -134,6 +134,8 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .loading, .error {
@@ -153,6 +155,7 @@ export default {
 .share-header h1 {
   margin: 0 0 10px 0;
   font-size: 24px;
+  word-break: break-word;
 }
 
 .share-meta {
@@ -163,54 +166,95 @@ export default {
 .description {
   margin: 10px 0;
   white-space: pre-line;
+  word-break: break-word;
 }
 
 .info {
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 10px 20px;
   margin: 10px 0;
 }
 
 .expires {
   color: #dc3545;
+  margin-top: 5px;
 }
 
 .code-container {
   background: #f8f9fa;
   border-radius: 4px;
-  padding: 20px;
+  padding: 15px;
   margin: 20px 0;
   overflow-x: auto;
+  position: relative;
+  max-width: 100%;
+  border: 1px solid #e9ecef;
 }
 
-.code-container pre {
+.code-block {
   margin: 0;
-  font-family: 'Fira Code', monospace;
+  font-family: 'Fira Code', 'Courier New', monospace;
   font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  word-wrap: break-word;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  color: #333;
+}
+
+.code-block code {
+  display: block;
+  width: 100%;
+}
+
+/* 基础语法高亮 */
+.code-block .keyword {
+  color: #0000ff;
+}
+
+.code-block .string {
+  color: #a31515;
+}
+
+.code-block .comment {
+  color: #008000;
+}
+
+.code-block .function {
+  color: #795e26;
 }
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 20px 0;
 }
 
 .btn {
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn i {
   font-size: 14px;
 }
 
 .btn-primary {
   background-color: #007bff;
   color: white;
-}
-
-.btn-primary:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -221,8 +265,10 @@ export default {
 .output {
   background: #f8f9fa;
   border-radius: 4px;
-  padding: 20px;
+  padding: 15px;
   margin-top: 20px;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .output h3 {
@@ -234,5 +280,94 @@ export default {
   margin: 0;
   font-family: monospace;
   white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .share-view {
+    padding: 15px 10px;
+  }
+
+  .share-header h1 {
+    font-size: 20px;
+  }
+
+  .info {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .code-container {
+    padding: 10px;
+    margin: 15px 0;
+    font-size: 0;  /* 修复移动端可能存在的间隙问题 */
+  }
+
+  .code-block {
+    font-size: 16px;
+    line-height: 1.4;
+    overflow-wrap: anywhere; /* 改进移动端文本换行 */
+  }
+
+  .actions {
+    justify-content: space-between;
+  }
+
+  .btn {
+    flex: 1;
+    text-align: center;
+    padding: 12px 10px;
+    font-size: 14px;
+  }
+
+  .btn i {
+    margin-right: 3px;
+  }
+
+  .output pre {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .share-view {
+    padding: 10px 5px;
+  }
+
+  .share-header h1 {
+    font-size: 18px;
+  }
+
+  .share-meta {
+    font-size: 13px;
+  }
+
+  .code-container {
+    padding: 8px;
+    border-radius: 3px;
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 12px 0;
+    font-size: 14px;
+  }
+
+  .output {
+    padding: 10px;
+  }
+
+  .output h3 {
+    font-size: 16px;
+  }
 }
 </style> 
