@@ -28,10 +28,10 @@
         <pre class="code-block"><code>{{ share.code }}</code></pre>
       </div>
       <div class="actions">
-        <button @click="runCode" class="btn btn-primary" :disabled="isRunning">
+        <button @click="runCode" class="btn btn-primary" :disabled="isRunning || isCopying">
           <i class="fas fa-play"></i> {{ isRunning ? '运行中...' : '运行' }}
         </button>
-        <button @click="copyCode" class="btn btn-secondary">
+        <button @click="copyCode" class="btn btn-secondary" :disabled="isRunning || isCopying">
           <i class="fas fa-copy"></i> {{ copied ? '已复制' : '复制代码' }}
         </button>
       </div>
@@ -53,7 +53,8 @@ export default {
       share: null,
       output: '',
       isRunning: false,
-      copied: false
+      copied: false,
+      isCopying: false
     }
   },
   async created() {
@@ -80,7 +81,8 @@ export default {
       }
     },
     async runCode() {
-      this.isRunning = true
+      if (this.isRunning || this.isCopying) return;
+      this.isRunning = true;
       try {
         const response = await fetch('/api/run', {
           method: 'POST',
@@ -91,24 +93,28 @@ export default {
             code: this.share.code,
             version: this.share.version
           })
-        })
-        const data = await response.json()
-        this.output = data.error || data.output
+        });
+        const data = await response.json();
+        this.output = data.error || data.output;
       } catch (error) {
-        this.output = '运行失败: ' + error.message
+        this.output = '运行失败: ' + error.message;
       } finally {
-        this.isRunning = false
+        this.isRunning = false;
       }
     },
     async copyCode() {
+      if (this.isRunning || this.isCopying) return;
+      this.isCopying = true;
       try {
-        await navigator.clipboard.writeText(this.share.code)
-        this.copied = true
+        await navigator.clipboard.writeText(this.share.code);
+        this.copied = true;
         setTimeout(() => {
-          this.copied = false
-        }, 2000)
+          this.copied = false;
+        }, 2000);
       } catch (error) {
-        console.error('复制失败:', error)
+        console.error('复制失败:', error);
+      } finally {
+        this.isCopying = false;
       }
     },
     formatDate(date) {

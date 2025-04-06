@@ -9,11 +9,11 @@
         </select>
       </div>
       <div class="action-buttons">
-        <button @click="runCode" class="btn btn-run">
-          <i class="fas fa-play"></i> Run
+        <button @click="runCode" class="btn btn-run" :disabled="isRunning || isFormatting">
+          <i class="fas fa-play"></i> {{ isRunning ? '运行中...' : '运行' }}
         </button>
-        <button @click="formatCode" class="btn btn-format">
-          <i class="fas fa-align-left"></i> Format
+        <button @click="formatCode" class="btn btn-format" :disabled="isRunning || isFormatting">
+          <i class="fas fa-align-left"></i> {{ isFormatting ? '格式化中...' : '格式化' }}
         </button>
         <button @click="showShareDialog" class="btn btn-share">
           <i class="fas fa-share-alt"></i> Share
@@ -77,6 +77,8 @@ export default {
       output: '',
       selectedVersion: 'go1.24',
       selectedExample: 'hello',
+      isRunning: false,
+      isFormatting: false,
       examples: {
         'hello': '// Hello World example\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
         'fibonacci': '// Fibonacci example\npackage main\n\nimport "fmt"\n\nfunc fibonacci(n int) int {\n\tif n <= 1 {\n\t\treturn n\n\t}\n\treturn fibonacci(n-1) + fibonacci(n-2)\n}\n\nfunc main() {\n\tfor i := 0; i < 10; i++ {\n\t\tfmt.Println(fibonacci(i))\n\t}\n}',
@@ -90,6 +92,8 @@ export default {
   },
   methods: {
     runCode() {
+      if (this.isRunning || this.isFormatting) return;
+      this.isRunning = true;
       // Call the backend API
       const versionPath = this.getVersionPath();
       axios.post(`/api/${versionPath}/run`, {
@@ -106,9 +110,14 @@ export default {
       })
       .catch(error => {
         this.output = 'Error: ' + error.response?.data?.error || 'Failed to run code';
+      })
+      .finally(() => {
+        this.isRunning = false;
       });
     },
     formatCode() {
+      if (this.isRunning || this.isFormatting) return;
+      this.isFormatting = true;
       // Call the backend API for formatting
       const versionPath = this.getVersionPath();
       axios.post(`/api/${versionPath}/format`, {
@@ -119,6 +128,9 @@ export default {
       })
       .catch(error => {
         this.output = 'Error formatting: ' + error.response?.data?.error || 'Failed to format code';
+      })
+      .finally(() => {
+        this.isFormatting = false;
       });
     },
     getVersionPath() {
