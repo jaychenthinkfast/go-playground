@@ -21,7 +21,6 @@
       </div>
       <div class="examples-dropdown">
         <select v-model="selectedExample" @change="loadExample">
-          <option value="">Examples</option>
           <option value="hello">Hello, World!</option>
           <option value="conway">Conway's Game of Life</option>
           <option value="fibonacci">Fibonacci</option>
@@ -74,10 +73,10 @@ export default {
   },
   data() {
     return {
-      code: '// You can edit this code!\n// Click here and start typing.\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
+      code: '// Hello World example\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
       output: '',
       selectedVersion: 'go1.24',
-      selectedExample: '',
+      selectedExample: 'hello',
       examples: {
         'hello': '// Hello World example\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
         'fibonacci': '// Fibonacci example\npackage main\n\nimport "fmt"\n\nfunc fibonacci(n int) int {\n\tif n <= 1 {\n\t\treturn n\n\t}\n\treturn fibonacci(n-1) + fibonacci(n-2)\n}\n\nfunc main() {\n\tfor i := 0; i < 10; i++ {\n\t\tfmt.Println(fibonacci(i))\n\t}\n}',
