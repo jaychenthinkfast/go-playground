@@ -54,7 +54,7 @@ cd playground
 
 2. 启动服务
 ```bash
-docker compose up --build --remove-orphans
+docker compose up --build -d
 ```
 
 3. 访问应用
@@ -67,7 +67,7 @@ docker compose up --build --remove-orphans
 如果您想在开发模式下启动服务，可以使用：
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml up --build -d
 ```
 
 这将启动开发模式，提供热重载和更详细的日志输出。开发模式下，前端服务会在端口 3003 上运行Vue开发服务器，提供实时热更新功能。
