@@ -34,6 +34,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 100M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3003"]
@@ -65,14 +70,6 @@ services:
         condition: service_healthy
     networks:
       - playground-network
-    restart: always
-    # 安全设置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     # 资源限制和重启策略
     deploy:
       resources:
@@ -85,8 +82,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 3
-        window: 120s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
@@ -107,8 +104,7 @@ services:
       - MONGO_INITDB_DATABASE=playground
     networks:
       - playground-network
-    restart: always
-    # 资源限制
+    # 资源限制和重启策略
     deploy:
       resources:
         limits:
@@ -117,6 +113,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: echo 'db.runCommand("ping").ok'
@@ -143,14 +144,6 @@ services:
       - AIR_TMPDIR=/app/tmp/go124  # 确保每个版本使用独立的临时目录
     networks:
       - playground-network
-    restart: always
-    # 安全设置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     # 资源限制和重启策略
     deploy:
       resources:
@@ -163,8 +156,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 3
-        window: 120s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
@@ -191,14 +184,6 @@ services:
       - AIR_TMPDIR=/app/tmp/go123  # 确保每个版本使用独立的临时目录
     networks:
       - playground-network
-    restart: always
-    # 安全设置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     # 资源限制和重启策略
     deploy:
       resources:
@@ -211,8 +196,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 3
-        window: 120s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
@@ -239,14 +224,6 @@ services:
       - AIR_TMPDIR=/app/tmp/go122  # 确保每个版本使用独立的临时目录
     networks:
       - playground-network
-    restart: always
-    # 安全设置
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     # 资源限制和重启策略
     deploy:
       resources:
@@ -259,8 +236,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 3
-        window: 120s
+        max_attempts: 5
+        window: 60s
     # 健康检查
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]

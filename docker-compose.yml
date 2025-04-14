@@ -20,7 +20,6 @@ services:
         condition: service_healthy
     networks:
       - playground-network
-    restart: always
     # 资源限制
     deploy:
       resources:
@@ -30,6 +29,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 100M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
     # 健康检查
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
@@ -56,7 +60,6 @@ services:
         condition: service_healthy
     networks:
       - playground-network
-    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -75,7 +78,7 @@ services:
           memory: 100M
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
     # 健康检查
@@ -98,7 +101,6 @@ services:
       - MONGO_INITDB_DATABASE=playground
     networks:
       - playground-network
-    restart: always
     # 资源限制
     deploy:
       resources:
@@ -108,6 +110,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
     # 健康检查
     healthcheck:
       test: echo 'db.runCommand("ping").ok' 
@@ -131,7 +138,6 @@ services:
       - GO_VERSION=go1.24
     networks:
       - playground-network
-    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -150,7 +156,7 @@ services:
           memory: 200M
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
     # 健康检查
@@ -178,7 +184,6 @@ services:
       - GO_VERSION=go1.23
     networks:
       - playground-network
-    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -197,7 +202,7 @@ services:
           memory: 200M
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
     # 健康检查
@@ -225,7 +230,6 @@ services:
       - GO_VERSION=go1.22
     networks:
       - playground-network
-    restart: always
     # 安全设置
     security_opt:
       - no-new-privileges:true
@@ -244,7 +248,7 @@ services:
           memory: 200M
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
     # 健康检查
