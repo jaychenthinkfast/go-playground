@@ -12,6 +12,14 @@ module.exports = {
         changeOrigin: true,
         ws: true
       },
+      '/api/go1.25': {
+        target: process.env.NODE_ENV === 'development' ? 'http://backend-go125-dev:3001' : 'http://backend-go125:3001',
+        changeOrigin: true,
+        ws: true,
+        pathRewrite: {
+          '^/api/go1.25': '/api'
+        }
+      },
       '/api/go1.24': {
         target: process.env.NODE_ENV === 'development' ? 'http://backend-go124-dev:3001' : 'http://backend-go124:3001',
         changeOrigin: true,

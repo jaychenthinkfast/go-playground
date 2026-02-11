@@ -15,6 +15,8 @@ services:
     environment:
       - NODE_ENV=development
     depends_on:
+      backend-go125-dev:
+        condition: service_healthy
       backend-go124-dev:
         condition: service_healthy
       backend-go123-dev:
@@ -56,7 +58,7 @@ services:
     container_name: go-playground-share-dev
     volumes:
       - ./share-service:/app  # 将源代码挂载到容器内，支持热更新
-      - share-service-go-mod-cache:/go/pkg/mod  # 缓存Go模块，加快构建速度
+      - ./data/share-service-go-mod-cache:/go/pkg/mod  # 缓存Go模块，加快构建速度
     environment:
       - TZ=UTC
       - PORT=3002
@@ -99,7 +101,7 @@ services:
       dockerfile: share-service/Dockerfile.mongo
     container_name: go-playground-mongo
     volumes:
-      - mongo_data_dev:/data/db
+      - ./data/mongo-dev:/data/db
     environment:
       - MONGO_INITDB_DATABASE=playground
     networks:
@@ -126,6 +128,46 @@ services:
       retries: 3
       start_period: 20s
 
+  # Go 1.25 后端服务 (开发环境)
+  backend-go125-dev:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: go-playground-backend-go125-dev
+    volumes:
+      - ./backend:/app  # 将源代码挂载到容器内，支持热更新
+      - ./data/backend-go125-mod-cache:/go/pkg/mod  # Go 1.25特定的缓存Go模块
+    ports:
+      - "3031:3001"  # Use different host port to avoid conflict
+    environment:
+      - TZ=UTC
+      - PORT=3001    # 后端服务端口
+      - GO_VERSION=go1.25
+      - AIR_TMPDIR=/app/tmp/go125  # 确保每个版本使用独立的临时目录
+    networks:
+      - playground-network
+    # 资源限制和重启策略
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # Go 1.24 后端服务 (开发环境)
   backend-go124-dev:
     build: 
@@ -134,7 +176,7 @@ services:
     container_name: go-playground-backend-go124-dev
     volumes:
       - ./backend:/app  # 将源代码挂载到容器内，支持热更新
-      - backend-go124-mod-cache:/go/pkg/mod  # Go 1.24特定的缓存Go模块
+      - ./data/backend-go124-mod-cache:/go/pkg/mod  # Go 1.24特定的缓存Go模块
     ports:
       - "3001:3001"  # Expose backend service port to host
     environment:
@@ -174,7 +216,7 @@ services:
     container_name: go-playground-backend-go123-dev
     volumes:
       - ./backend:/app  # 将源代码挂载到容器内，支持热更新
-      - backend-go123-mod-cache:/go/pkg/mod  # Go 1.23特定的缓存Go模块
+      - ./data/backend-go123-mod-cache:/go/pkg/mod  # Go 1.23特定的缓存Go模块
     ports:
       - "3011:3001"  # Use different host port to avoid conflict
     environment:
@@ -214,7 +256,7 @@ services:
     container_name: go-playground-backend-go122-dev
     volumes:
       - ./backend:/app  # 将源代码挂载到容器内，支持热更新
-      - backend-go122-mod-cache:/go/pkg/mod  # Go 1.22特定的缓存Go模块
+      - ./data/backend-go122-mod-cache:/go/pkg/mod  # Go 1.22特定的缓存Go模块
     ports:
       - "3021:3001"  # Use different host port to avoid conflict
     environment:
@@ -251,10 +293,11 @@ networks:
   playground-network:
     driver: bridge
 
-# 持久化存储
-volumes:
-  mongo_data_dev:    # MongoDB 数据持久化 
-  share-service-go-mod-cache:  # 添加Share服务Go模块缓存卷
-  backend-go124-mod-cache:  # 添加Backend服务Go模块缓存卷
-  backend-go123-mod-cache:  # 添加Go 1.23特定的缓存Go模块
-  backend-go122-mod-cache:  # 添加Go 1.22特定的缓存Go模块
+# 持久化存储（已改为当前目录 ./data 绑定挂载）
+# volumes:
+#   mongo_data_dev:    # MongoDB 数据持久化 
+#   share-service-go-mod-cache:  # 添加Share服务Go模块缓存卷
+#   backend-go125-mod-cache:  # 添加Go 1.25特定的缓存Go模块
+#   backend-go124-mod-cache:  # 添加Backend服务Go模块缓存卷
+#   backend-go123-mod-cache:  # 添加Go 1.23特定的缓存Go模块
+#   backend-go122-mod-cache:  # 添加Go 1.22特定的缓存Go模块

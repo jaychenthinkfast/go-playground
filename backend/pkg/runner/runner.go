@@ -11,6 +11,7 @@ import (
 
 // Supported Go versions
 const (
+	Go125 = "go1.25"
 	Go124 = "go1.24"
 	Go123 = "go1.23"
 	Go122 = "go1.22"
@@ -18,6 +19,7 @@ const (
 
 // Version information
 var Versions = map[string]string{
+	Go125: "Go 1.25 - Released August 2024",
 	Go124: "Go 1.24 - Released February 2024",
 	Go123: "Go 1.23 - Released August 2023",
 	Go122: "Go 1.22 - Released February 2023",

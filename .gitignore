@@ -50,3 +50,4 @@ logs/
 .eslintcache
 .stylelintcache
 coverage/ 
+data

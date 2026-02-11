@@ -183,6 +183,8 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 	// 验证版本格式，确保版本格式正确
 	var normalizedVersion string
 	switch req.Version {
+	case "go1.25", "1.25", "go1.25.0", "1.25.0":
+		normalizedVersion = "go1.25"
 	case "go1.22", "1.22", "go1.22.0", "1.22.0":
 		normalizedVersion = "go1.22"
 	case "go1.23", "1.23", "go1.23.0", "1.23.0":
@@ -195,7 +197,7 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 		// 返回错误响应
 		result := &models.RunResult{
 			Output:    "",
-			Error:     "Unsupported Go version. Available versions: go1.24, go1.23, go1.22",
+			Error:     "Unsupported Go version. Available versions: go1.25, go1.24, go1.23, go1.22",
 			ExitCode:  1,
 			Duration:  0,
 			Memory:    0,
@@ -216,6 +218,12 @@ func (h *Handler) ExecuteCode(c *gin.Context) {
 	isDevEnv := os.Getenv("GO_ENV") == "development"
 
 	switch normalizedVersion {
+	case "go1.25":
+		if isDevEnv {
+			backendURL = "http://backend-go125-dev:3001/api/run"
+		} else {
+			backendURL = "http://backend-go125:3001/api/run"
+		}
 	case "go1.22":
 		if isDevEnv {
 			backendURL = "http://backend-go122-dev:3001/api/run"

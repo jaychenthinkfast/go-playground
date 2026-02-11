@@ -10,6 +10,8 @@ services:
     ports:
       - "3003:80"  # 映射主机3003端口到容器80端口
     depends_on:
+      backend-go125:
+        condition: service_healthy
       backend-go124:
         condition: service_healthy
       backend-go123:
@@ -96,7 +98,7 @@ services:
       dockerfile: share-service/Dockerfile.mongo
     container_name: go-playground-mongo
     volumes:
-      - mongo_data:/data/db
+      - ./data/mongo:/data/db
     environment:
       - MONGO_INITDB_DATABASE=playground
     networks:
@@ -122,6 +124,52 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+  # Go 1.25 后端服务
+  backend-go125:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: "1.25"
+        GO_MOD_VERSION: "1.25"
+    container_name: go-playground-backend-go125
+    environment:
+      - TZ=UTC
+      - PORT=3001    # 后端服务端口
+      - GO_VERSION=go1.25
+    networks:
+      - playground-network
+    # 安全设置
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # 资源限制和重启策略
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+    # 健康检查
+    healthcheck:
+      test: 
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:3001/api/health || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Go 1.24 后端服务
   backend-go124:
@@ -266,6 +314,6 @@ networks:
   playground-network:
     driver: bridge
 
-# 持久化存储
-volumes:
-  mongo_data:    # MongoDB 数据持久化 
+# 持久化存储（已改为当前目录 ./data/mongo 绑定挂载）
+# volumes:
+#   mongo_data:    # MongoDB 数据持久化 

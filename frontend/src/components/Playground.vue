@@ -3,6 +3,7 @@
     <div class="toolbar">
       <div class="version-selector">
         <select v-model="selectedVersion">
+          <option value="go1.25">Go 1.25</option>
           <option value="go1.24">Go 1.24</option>
           <option value="go1.23">Go 1.23</option>
           <option value="go1.22">Go 1.22</option>
@@ -136,6 +137,8 @@ export default {
     getVersionPath() {
       // Map the selected version to the API path
       switch(this.selectedVersion) {
+        case 'go1.25':
+          return 'go1.25';
         case 'go1.24':
           return 'go1.24';
         case 'go1.23':
