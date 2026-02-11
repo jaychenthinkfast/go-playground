@@ -76,7 +76,7 @@ export default {
     return {
       code: '// Hello World example\npackage main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("Hello, 世界")\n}',
       output: '',
-      selectedVersion: 'go1.24',
+      selectedVersion: 'go1.25',
       selectedExample: 'hello',
       isRunning: false,
       isFormatting: false,
