@@ -84,7 +84,7 @@ export default {
       if (this.isRunning || this.isCopying) return;
       this.isRunning = true;
       try {
-        const response = await fetch('/api/run', {
+        const response = await fetch('/api/execute', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -95,7 +95,12 @@ export default {
           })
         });
         const data = await response.json();
-        this.output = data.error || data.output;
+        const result = data.result || data;
+        let output = result.output || '';
+        if (result.error) {
+          output += (output ? '\n\n-- Error --\n' : '') + result.error;
+        }
+        this.output = output || data.error || '';
       } catch (error) {
         this.output = '运行失败: ' + error.message;
       } finally {
