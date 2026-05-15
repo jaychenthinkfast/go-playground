@@ -51,3 +51,10 @@ logs/
 .stylelintcache
 coverage/ 
 data
+
+# Project specific generated artifacts
+frontend/node_modules/
+frontend/dist/
+backend/main
+backend/tmp/
+share-service/tmp/
